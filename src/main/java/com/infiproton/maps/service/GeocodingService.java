@@ -27,6 +27,7 @@ public class GeocodingService {
             }
 
             GeocodingResult result = results[0];
+            int resultCount = results.length;
 
             GeocodeResponse response = new GeocodeResponse();
             response.setFormattedAddress(result.formattedAddress);
@@ -41,6 +42,16 @@ public class GeocodingService {
                         .toList();
                 response.setTypes(types);
             }
+
+            response.setResultCount(resultCount);
+            response.setAmbiguous(resultCount > 1);
+            if (resultCount > 1) {
+                List<String> candidates = Arrays.stream(results)
+                        .map(r -> r.formattedAddress)
+                        .toList();
+                response.setCandidateAddresses(candidates);
+            }
+
             return response;
         } catch (ApiException | InterruptedException | IOException e) {
             throw new RuntimeException("Failed to call Geocoding API", e);

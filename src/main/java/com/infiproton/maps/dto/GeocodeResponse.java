@@ -16,4 +16,8 @@ public class GeocodeResponse {
     private String placeId;
     private List<String> types;
     private boolean partialMatch;
+
+    private boolean ambiguous;
+    private int resultCount;
+    private List<String> candidateAddresses;
 }
