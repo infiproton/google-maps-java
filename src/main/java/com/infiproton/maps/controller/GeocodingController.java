@@ -22,9 +22,6 @@ class GeocodingController {
     public ResponseEntity<GeocodeResponse> geocode(@RequestBody GeocodeRequest request) {
         GeocodeResponse response = geocodingService.geocode(request.getAddress());
 
-        if (response == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
         return ResponseEntity.ok(response);
     }
 }

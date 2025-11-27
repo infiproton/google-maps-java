@@ -3,9 +3,13 @@ package com.infiproton.maps.service;
 import com.google.maps.GeoApiContext;
 import com.google.maps.GeocodingApi;
 import com.google.maps.errors.ApiException;
+import com.google.maps.errors.InvalidRequestException;
+import com.google.maps.errors.OverQueryLimitException;
+import com.google.maps.errors.RequestDeniedException;
 import com.google.maps.model.AddressType;
 import com.google.maps.model.GeocodingResult;
 import com.infiproton.maps.dto.GeocodeResponse;
+import com.infiproton.maps.model.GeocodeStatus;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,15 +25,16 @@ public class GeocodingService {
     public GeocodeResponse geocode(String address) {
         try {
             GeocodingResult[] results = GeocodingApi.geocode(geoApiContext, address).await();
-
+            GeocodeResponse response = new GeocodeResponse();
             if (results == null || results.length == 0) {
-                return null;
+                response.setStatus(GeocodeStatus.ZERO_RESULTS);
+                return response;
             }
 
             GeocodingResult result = results[0];
             int resultCount = results.length;
 
-            GeocodeResponse response = new GeocodeResponse();
+            response.setStatus(GeocodeStatus.OK);
             response.setFormattedAddress(result.formattedAddress);
             response.setLatitude(result.geometry.location.lat);
             response.setLongitude(result.geometry.location.lng);
@@ -53,9 +58,23 @@ public class GeocodingService {
             }
 
             return response;
-        } catch (ApiException | InterruptedException | IOException e) {
+        } catch (InvalidRequestException e) {
+            return errorResponse(GeocodeStatus.INVALID_REQUEST);
+        } catch (RequestDeniedException e) {
+            return errorResponse(GeocodeStatus.REQUEST_DENIED);
+        } catch (OverQueryLimitException e) {
+            return errorResponse(GeocodeStatus.OVER_QUERY_LIMIT);
+        } catch (ApiException e) {
+            return errorResponse(GeocodeStatus.UNKNOWN_ERROR);
+        } catch (InterruptedException | IOException e) {
             throw new RuntimeException("Failed to call Geocoding API", e);
         }
+    }
+
+    private GeocodeResponse errorResponse(GeocodeStatus status) {
+        GeocodeResponse dto = new GeocodeResponse();
+        dto.setStatus(status);
+        return dto;
     }
 
 }

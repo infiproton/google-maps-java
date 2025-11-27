@@ -1,5 +1,6 @@
 package com.infiproton.maps.dto;
 
+import com.infiproton.maps.model.GeocodeStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,4 +21,6 @@ public class GeocodeResponse {
     private boolean ambiguous;
     private int resultCount;
     private List<String> candidateAddresses;
+
+    private GeocodeStatus status;
 }
