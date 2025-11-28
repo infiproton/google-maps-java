@@ -75,7 +75,7 @@ public class GeocodingService {
         // 1. Check cache
         CachedGeocodeEntry cached = geocodeCacheStore.get(cacheKey);
         if(cached != null && !cached.isExpired()) {
-            return cached.getResponse();
+            return (GeocodeResponse) cached.getResponse();
         }
 
         // 2. Invoke google
