@@ -2,7 +2,10 @@ package com.infiproton.maps.controller;
 
 import com.infiproton.maps.dto.GeocodeRequest;
 import com.infiproton.maps.dto.GeocodeResponse;
+import com.infiproton.maps.dto.ReverseGeocodingRequest;
+import com.infiproton.maps.dto.ReverseGeocodingResponse;
 import com.infiproton.maps.service.GeocodingService;
+import com.infiproton.maps.service.ReverseGeocodeService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,6 +22,16 @@ import java.io.IOException;
 class GeocodingController {
 
     private final GeocodingService  geocodingService;
+    private final ReverseGeocodeService reverseGeocodeService;
+
+    @PostMapping("/reverse-geocode")
+    public ResponseEntity<ReverseGeocodingResponse> reverseGeocode(@RequestBody ReverseGeocodingRequest request) {
+        ReverseGeocodingResponse response = reverseGeocodeService.reverseGeocode(request.getLat(), request.getLng());
+        if (response == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build() ;
+        }
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping(
             value = "/geocode/bulk",
