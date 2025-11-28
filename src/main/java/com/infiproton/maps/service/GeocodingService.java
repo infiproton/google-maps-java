@@ -8,12 +8,15 @@ import com.google.maps.errors.OverQueryLimitException;
 import com.google.maps.errors.RequestDeniedException;
 import com.google.maps.model.AddressType;
 import com.google.maps.model.GeocodingResult;
+import com.infiproton.maps.cache.CachedGeocodeEntry;
+import com.infiproton.maps.cache.GeocodeCacheStore;
 import com.infiproton.maps.dto.GeocodeResponse;
 import com.infiproton.maps.model.GeocodeStatus;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -21,8 +24,34 @@ import java.util.List;
 @AllArgsConstructor
 public class GeocodingService {
     private final GeoApiContext geoApiContext;
+    private final GeocodeCacheStore geocodeCacheStore;
 
     public GeocodeResponse geocode(String address) {
+
+        String cacheKey = normalizeKey(address);
+
+        // 1. Check cache
+        CachedGeocodeEntry cached = geocodeCacheStore.get(cacheKey);
+        if(cached != null && !cached.isExpired()) {
+            return cached.getResponse();
+        }
+
+        // 2. Invoke google
+        GeocodeResponse response = invokeGoogle(address);
+
+        // 3. Store response in the cache
+        if (response.getStatus() == GeocodeStatus.OK ||
+                response.getStatus() == GeocodeStatus.ZERO_RESULTS) {
+            CachedGeocodeEntry entry = new CachedGeocodeEntry();
+            entry.setResponse(response);
+            entry.setExpiresAt(Instant.now().plusSeconds(3600)); // 1 hour
+            geocodeCacheStore.put(cacheKey, entry);
+        }
+
+        return response;
+    }
+
+    public GeocodeResponse invokeGoogle(String address) {
         try {
             GeocodingResult[] results = GeocodingApi.geocode(geoApiContext, address).await();
             GeocodeResponse response = new GeocodeResponse();
@@ -75,6 +104,10 @@ public class GeocodingService {
         GeocodeResponse dto = new GeocodeResponse();
         dto.setStatus(status);
         return dto;
+    }
+
+    private String normalizeKey(String address) {
+        return address.trim().toLowerCase();
     }
 
 }
