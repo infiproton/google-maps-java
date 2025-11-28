@@ -38,6 +38,8 @@ dependencies {
     implementation 'com.google.maps:google-maps-addressvalidation:0.73.0'
     implementation 'com.google.maps:google-maps-services:2.2.0'
 
+    // Utils
+    implementation 'org.apache.commons:commons-csv:1.10.0'
 }
 
 tasks.named('test') {

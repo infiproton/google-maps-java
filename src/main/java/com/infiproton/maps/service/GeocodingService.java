@@ -13,9 +13,14 @@ import com.infiproton.maps.cache.GeocodeCacheStore;
 import com.infiproton.maps.dto.GeocodeResponse;
 import com.infiproton.maps.model.GeocodeStatus;
 import lombok.AllArgsConstructor;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +30,43 @@ import java.util.List;
 public class GeocodingService {
     private final GeoApiContext geoApiContext;
     private final GeocodeCacheStore geocodeCacheStore;
+
+    public byte[] bulkGeocode(InputStream inputStream) throws IOException {
+        List<CSVRecord> records;
+        try (Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+             CSVParser parser = CSVFormat.DEFAULT
+                     .withFirstRecordAsHeader()
+                     .parse(reader)) {
+
+            records = parser.getRecords();
+        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        try (OutputStreamWriter writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+        CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT.withHeader(
+                "input_address",
+                "formatted_address",
+                "latitude",
+                "longitude",
+                "status",
+                "partial_match",
+                "ambiguous"
+        ))) {
+            for (CSVRecord record : records) {
+                String rawAddress = record.get("address");
+                GeocodeResponse geo = geocode(rawAddress);
+
+                printer.printRecord(rawAddress,
+                        geo.getFormattedAddress(),
+                        geo.getLatitude(),
+                        geo.getLongitude(),
+                        geo.getStatus(),
+                        geo.isPartialMatch(), geo.isAmbiguous());
+            }
+        }
+
+        return baos.toByteArray();
+    }
 
     public GeocodeResponse geocode(String address) {
 
