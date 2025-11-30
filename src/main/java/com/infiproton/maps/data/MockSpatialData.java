@@ -10,6 +10,15 @@ public class MockSpatialData {
 
     public static final GeoPoint CUSTOMER = new GeoPoint(12.9716, 77.5946);
 
+    // Simple polygon approximating a city service zone
+    public static final List<GeoPoint> CITY_SERVICE_AREA = List.of(
+            new GeoPoint(12.99, 77.55),
+            new GeoPoint(13.05, 77.60),
+            new GeoPoint(12.98, 77.65),
+            new GeoPoint(12.90, 77.64),
+            new GeoPoint(12.88, 77.57)
+    );
+
     public static final List<Warehouse> WAREHOUSES = List.of(
             new Warehouse("W1", "North Hub", new GeoPoint(13.0358, 77.5970)),
             new Warehouse("W2", "Central Hub", new GeoPoint(12.9758, 77.6055)),
