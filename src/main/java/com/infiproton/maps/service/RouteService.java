@@ -12,6 +12,8 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -35,7 +37,14 @@ public class RouteService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Goog-Api-Key", mapsApiKey);
-        headers.set("X-Goog-FieldMask", "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline");
+        headers.set("X-Goog-FieldMask", "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline," +
+                        "routes.legs.steps.navigationInstruction," +
+                        "routes.legs.steps.polyline.encodedPolyline," +
+                        "routes.legs.steps.distanceMeters," +
+                        "routes.legs.steps.staticDuration," +
+                        "routes.legs.distanceMeters," +
+                        "routes.legs.duration"
+                );
 
         HttpEntity<ComputeRoutesRequest> entity = new HttpEntity<>(body, headers);
         ResponseEntity<ComputeRoutesResponse> respEntity;
@@ -65,7 +74,40 @@ public class RouteService {
         long distance = Optional.ofNullable(r.getDistanceMeters()).orElse(0L);
         long durationSeconds = parseDurationToSeconds(r.getDuration());
         String polyline = (r.getPolyline() != null) ? r.getPolyline().getEncodedPolyline() : "";
-        return new RouteResponse(distance, durationSeconds, polyline);
+
+        RouteResponse out = RouteResponse.builder()
+                .distanceMeters(distance)
+                .durationSeconds(durationSeconds)
+                .polyline(polyline)
+                .build();
+
+        // TODO: parse legs & steps
+        if (r.getLegs() != null && !r.getLegs().isEmpty()) {
+            List<RouteResponse.Leg> legs = new ArrayList<>();
+
+            for (ComputeRoutesResponse.Leg leg : r.getLegs()) {
+                long legDistance = Optional.ofNullable(leg.getDistanceMeters()).orElse(0L);
+                long legDuration = parseDurationToSeconds(leg.getDuration());
+
+                List<RouteResponse.Step> steps = new ArrayList<>();
+                for (ComputeRoutesResponse.Step s : leg.getSteps()) {
+                    String instr = s.getNavigationInstruction() != null ?
+                            s.getNavigationInstruction().getInstructions() : "";
+                    String maneuver = s.getNavigationInstruction() != null ?
+                            s.getNavigationInstruction().getManeuver() : "";
+
+                    long stepDist = Optional.ofNullable(s.getDistanceMeters()).orElse(0L);
+                    long stepDur = parseDurationToSeconds(s.getStaticDuration());
+                    String stepPoly = s.getPolyline() != null ? s.getPolyline().getEncodedPolyline() : "";
+
+                    steps.add(new RouteResponse.Step(instr, maneuver, stepDist, stepDur, stepPoly));
+                }
+                legs.add(new RouteResponse.Leg(legDistance, legDuration, steps));
+            }
+            out.setLegs(legs);
+        }
+
+        return out;
     }
 
     /**
