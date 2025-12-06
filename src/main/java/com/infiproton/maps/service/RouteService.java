@@ -66,14 +66,17 @@ public class RouteService {
         Waypoint.LatLng destLatLng = new Waypoint.LatLng(req.destination().lat(), req.destination().lng());
         Waypoint destination = new Waypoint(new Waypoint.Location(destLatLng));
 
-        return new ComputeRoutesRequest(origin, destination, "DRIVE", "TRAFFIC_AWARE");
+        String mode = req.travelMode() != null ? req.travelMode() : "DRIVE";
+        Boolean alt = req.alternativeRoutes();
+        String routingPreference = "DRIVE".equalsIgnoreCase(mode) ? "TRAFFIC_AWARE" : null;
+        return new ComputeRoutesRequest(origin, destination, mode, routingPreference, alt);
     }
 
     private RouteResponse parsePrimaryRoute(ComputeRoutesResponse resp) {
-        ComputeRoutesResponse.Route r = resp.getRoutes().get(0);
-        long distance = Optional.ofNullable(r.getDistanceMeters()).orElse(0L);
-        long durationSeconds = parseDurationToSeconds(r.getDuration());
-        String polyline = (r.getPolyline() != null) ? r.getPolyline().getEncodedPolyline() : "";
+        ComputeRoutesResponse.Route primary = resp.getRoutes().get(0);
+        long distance = Optional.ofNullable(primary.getDistanceMeters()).orElse(0L);
+        long durationSeconds = parseDurationToSeconds(primary.getDuration());
+        String polyline = (primary.getPolyline() != null) ? primary.getPolyline().getEncodedPolyline() : "";
 
         RouteResponse out = RouteResponse.builder()
                 .distanceMeters(distance)
@@ -81,11 +84,11 @@ public class RouteService {
                 .polyline(polyline)
                 .build();
 
-        // TODO: parse legs & steps
-        if (r.getLegs() != null && !r.getLegs().isEmpty()) {
+        //  parse legs & steps
+        if (primary.getLegs() != null && !primary.getLegs().isEmpty()) {
             List<RouteResponse.Leg> legs = new ArrayList<>();
 
-            for (ComputeRoutesResponse.Leg leg : r.getLegs()) {
+            for (ComputeRoutesResponse.Leg leg : primary.getLegs()) {
                 long legDistance = Optional.ofNullable(leg.getDistanceMeters()).orElse(0L);
                 long legDuration = parseDurationToSeconds(leg.getDuration());
 
@@ -106,6 +109,18 @@ public class RouteService {
             }
             out.setLegs(legs);
         }
+
+        //  process alternative routes
+        List<RouteResponse.RouteSummary> altList = new ArrayList<>();
+        for (int i = 1; i < resp.getRoutes().size(); i++) {
+            ComputeRoutesResponse.Route alt = resp.getRoutes().get(i);
+            altList.add(new RouteResponse.RouteSummary(
+                    alt.getDistanceMeters(),
+                    parseDurationToSeconds(alt.getDuration()),
+                    alt.getPolyline().getEncodedPolyline()
+            ));
+        }
+        out.setAlternatives(altList);
 
         return out;
     }

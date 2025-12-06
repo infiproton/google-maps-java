@@ -17,6 +17,17 @@ public class RouteResponse {
 
     private List<Leg> legs;
 
+    private List<RouteSummary> alternatives;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class RouteSummary {
+        private long distanceMeters;
+        private long durationSeconds;
+        private String polyline;
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

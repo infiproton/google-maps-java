@@ -14,4 +14,6 @@ public class ComputeRoutesRequest {
     private Waypoint destination;
     private String travelMode;         // e.g., "DRIVE"
     private String routingPreference;  // e.g., "TRAFFIC_AWARE"
+
+    private Boolean computeAlternativeRoutes;
 }
