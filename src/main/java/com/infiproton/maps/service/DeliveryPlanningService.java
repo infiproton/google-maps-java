@@ -15,6 +15,7 @@ public class DeliveryPlanningService {
     private final ServiceAreaService serviceAreaService;
     private final NearestWarehouseService nearestWarehouseService;
     private final ReverseGeocodeService reverseGeocodingService;
+    private final RouteService routeService;
 
     public PlanDeliveryResponse planDelivery(PlanDeliveryRequest request) {
 
@@ -40,6 +41,11 @@ public class DeliveryPlanningService {
         );
         String displayAddress = reverseResult.getFormattedAddress();
 
+        // 5. Routing details
+        RouteRequest routeRequest = new RouteRequest(nearestWarehouse.location(),
+                customerLocation, "DRIVE", false, null);
+        RouteResponse routeResponse = routeService.getRoute(routeRequest);
+
         return PlanDeliveryResponse.builder()
                 .inputAddress(request.customerAddress())
                 .lat(customerLocation.lat())
@@ -48,6 +54,7 @@ public class DeliveryPlanningService {
                 .nearestWarehouse(nearestWarehouse)
                 .warehouseDistanceKm(distanceKm)
                 .displayAddress(displayAddress)
+                .route(routeResponse)
                 .build();
     }
 

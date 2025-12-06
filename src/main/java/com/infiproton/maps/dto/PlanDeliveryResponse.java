@@ -19,4 +19,6 @@ public class PlanDeliveryResponse {
     private double warehouseDistanceKm;
 
     private String displayAddress;
+
+    private RouteResponse route;
 }
