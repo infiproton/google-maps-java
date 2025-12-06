@@ -2,6 +2,7 @@ package com.infiproton.maps.service;
 
 import com.infiproton.maps.dto.RouteRequest;
 import com.infiproton.maps.dto.RouteResponse;
+import com.infiproton.maps.model.GeoPoint;
 import com.infiproton.maps.model.routes.ComputeRoutesRequest;
 import com.infiproton.maps.model.routes.ComputeRoutesResponse;
 import com.infiproton.maps.model.routes.Waypoint;
@@ -69,7 +70,18 @@ public class RouteService {
         String mode = req.travelMode() != null ? req.travelMode() : "DRIVE";
         Boolean alt = req.alternativeRoutes();
         String routingPreference = "DRIVE".equalsIgnoreCase(mode) ? "TRAFFIC_AWARE" : null;
-        return new ComputeRoutesRequest(origin, destination, mode, routingPreference, alt);
+
+        // add waypoints
+        List<Waypoint> intermediates = new ArrayList<>();
+        if (req.waypoints() != null && !req.waypoints().isEmpty()) {
+            for (GeoPoint gp : req.waypoints()) {
+                Waypoint.LatLng latLng = new Waypoint.LatLng(gp.lat(), gp.lng());
+                Waypoint.Location loc = new Waypoint.Location(latLng);
+                intermediates.add(new Waypoint(loc));
+            }
+        }
+
+        return new ComputeRoutesRequest(origin, destination, mode, routingPreference, alt, intermediates);
     }
 
     private RouteResponse parsePrimaryRoute(ComputeRoutesResponse resp) {
