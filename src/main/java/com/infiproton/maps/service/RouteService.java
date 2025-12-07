@@ -144,7 +144,7 @@ public class RouteService {
      * 3) If ends with 's', parse the numeric prefix
      * 4) Fallback: extract first number
      */
-    private long parseDurationToSeconds(String text) {
+    public static long parseDurationToSeconds(String text) {
         if (text == null || text.isBlank()) return 0L;
 
         // Try ISO-8601 first (PT...), else simple "Ns" format, else fallback
