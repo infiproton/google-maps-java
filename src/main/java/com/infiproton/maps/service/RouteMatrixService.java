@@ -4,6 +4,7 @@ import com.infiproton.maps.data.MockSpatialData;
 import com.infiproton.maps.dto.DriverEtaResponse;
 import com.infiproton.maps.dto.DriversNearbyRequest;
 import com.infiproton.maps.model.Driver;
+import com.infiproton.maps.model.DriverDistance;
 import com.infiproton.maps.model.GeoPoint;
 import com.infiproton.maps.model.routes.MatrixEntry;
 import com.infiproton.maps.model.routes.MatrixRequest;
@@ -27,6 +28,12 @@ public class RouteMatrixService {
 
     private static final double PREFILTER_KM = 3.0d;
 
+    // hard cap on how many drivers we send to the matrix
+    private static final int MAX_MATRIX_CANDIDATES = 3;
+
+    // if ETAs are within this window, treat them as "close" and prefer shorter distance
+    private static final long ETA_TIE_THRESHOLD_SECONDS = 60L; // in seconds
+
     public RouteMatrixService(@Value("${maps.api.key}") String mapsApiKey, RestTemplate restTemplate) {
         this.mapsApiKey = mapsApiKey;
         this.restTemplate = restTemplate;
@@ -49,19 +56,34 @@ public class RouteMatrixService {
 
         // 4) Map entries -> DriverEtaResponse
         List<DriverEtaResponse> results = parseMatrixEntries(entries, candidates);
+        if (results.isEmpty()) {
+            // No usable matrix entries → geometry fallback
+            return buildGeometryFallback(candidates, customer);
+        }
 
         // 5) Sort by ETA
         return results.stream()
-                .sorted(Comparator.comparingLong(DriverEtaResponse::getEtaSeconds))
+                .sorted((a, b) -> {
+                    long diff = a.getEtaSeconds() - b.getEtaSeconds();
+                    // clear winner by ETA
+                    if (Math.abs(diff) > ETA_TIE_THRESHOLD_SECONDS) {
+                        return Long.compare(a.getEtaSeconds(), b.getEtaSeconds());
+                    }
+
+                    // ETAs are close → prefer shorter distance
+                    return Long.compare(a.getDistanceMeters(), b.getDistanceMeters());
+                })
+
                 .collect(Collectors.toList());
     }
 
     private List<Driver> prefilterDrivers(GeoPoint customer) {
         return MockSpatialData.DRIVERS.stream()
-                .filter(d -> {
-                    double distKm = DistanceCalculator.distanceInKm(d.location(), customer);
-                    return distKm <= PREFILTER_KM;
-                })
+                .map(d -> new DriverDistance(d, DistanceCalculator.distanceInKm(d.location(), customer)))
+                .filter(dd -> dd.distanceKm() <= PREFILTER_KM)
+                .sorted(Comparator.comparingDouble(DriverDistance::distanceKm))
+                .limit(MAX_MATRIX_CANDIDATES)
+                .map(DriverDistance::driver)
                 .collect(Collectors.toList());
     }
 
@@ -117,8 +139,37 @@ public class RouteMatrixService {
             long etaSeconds = RouteService.parseDurationToSeconds(e.getDuration());
             String condition = e.getCondition();
 
+            // skip entries where route does not exist
+            if (condition != null && !"ROUTE_EXISTS".equalsIgnoreCase(condition)) {
+                continue;
+            }
             out.add(new DriverEtaResponse(driver, etaSeconds, distance, condition));
         }
         return out;
+    }
+
+    /**
+     * Geometry-only fallback when matrix data is unusable.
+     * - Uses straight-line distance
+     * - Approximates ETA with a constant speed
+     * - Marks condition as "GEOMETRY_FALLBACK"
+     */
+    private List<DriverEtaResponse> buildGeometryFallback(List<Driver> candidates, GeoPoint customer) {
+        final double assumedSpeedMetersPerSecond = 5.0; // ~18 km/h, just for fallback
+
+        return candidates.stream().map(d -> {
+            double distanceKm = DistanceCalculator.distanceInKm(d.location(), customer);
+            long distanceMeters = Math.round(distanceKm * 1000);
+
+            long etaSeconds = distanceMeters > 0
+                    ? Math.round(distanceMeters / assumedSpeedMetersPerSecond)
+                    : 0L;
+
+            return new DriverEtaResponse(d,
+                    etaSeconds,
+                    distanceMeters,
+                    "GEOMETRY_FALLBACK"
+            );
+        }).collect(Collectors.toList());
     }
 }

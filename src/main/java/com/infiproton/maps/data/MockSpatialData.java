@@ -28,6 +28,8 @@ public class MockSpatialData {
     public static final List<Driver> DRIVERS = List.of(
             new Driver("D1", "Ravi", new GeoPoint(12.9721, 77.5933)),
             new Driver("D2", "Amit", new GeoPoint(12.9615, 77.6100)),
-            new Driver("D3", "Suresh", new GeoPoint(13.0200, 77.5500))
+            new Driver("D3", "Suresh", new GeoPoint(13.0200, 77.5500)),
+            new Driver("D4", "Meena",  new GeoPoint(12.9800, 77.6200)),
+            new Driver("D5", "Kiran",  new GeoPoint(12.9500, 77.5800))
     );
 }
