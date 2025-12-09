@@ -102,7 +102,7 @@ public class RouteMatrixService {
         return new MatrixRequest(origins, List.of(destination), "DRIVE");
     }
 
-    private List<MatrixEntry> callMatrixApi(MatrixRequest body) {
+    public List<MatrixEntry> callMatrixApi(MatrixRequest body) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("X-Goog-Api-Key", mapsApiKey);

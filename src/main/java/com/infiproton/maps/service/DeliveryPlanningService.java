@@ -32,7 +32,7 @@ public class DeliveryPlanningService {
         // 3. Nearest Warehouse Selection
         NearestWarehouseResponse nearestWarehouseResult = nearestWarehouseService.findNearestWarehouse(customerLocation);
         Warehouse nearestWarehouse = nearestWarehouseResult.warehouse();
-        double distanceKm = nearestWarehouseResult.distanceKm();
+        long distanceMeters = nearestWarehouseResult.distanceMeters();
 
         // 4. Reverse Geocode for display / logging
         ReverseGeocodingResponse reverseResult = reverseGeocodingService.reverseGeocode(
@@ -52,7 +52,7 @@ public class DeliveryPlanningService {
                 .lng(customerLocation.lng())
                 .serviceAreaStatus(serviceAreaStatus)
                 .nearestWarehouse(nearestWarehouse)
-                .warehouseDistanceKm(distanceKm)
+                .warehouseDistanceKm(distanceMeters)
                 .displayAddress(displayAddress)
                 .route(routeResponse)
                 .build();
