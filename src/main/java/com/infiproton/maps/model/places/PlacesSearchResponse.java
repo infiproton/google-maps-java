@@ -13,6 +13,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlacesSearchResponse {
     private List<Place> places;
+    private String nextPageToken;
 
     @Data
     @AllArgsConstructor
@@ -22,6 +23,7 @@ public class PlacesSearchResponse {
         private String id;
         private DisplayName displayName;
         private Location location;
+        private String formattedAddress;
         private String primaryType;
         private Double rating;
         private CurrentOpeningHours currentOpeningHours;
