@@ -1,16 +1,11 @@
 package com.infiproton.maps.controller;
 
-import com.infiproton.maps.dto.PlacesNearbyRequest;
-import com.infiproton.maps.dto.PlacesNearbyResponse;
-import com.infiproton.maps.dto.PlacesSearchRequest;
-import com.infiproton.maps.dto.PlacesSearchResponseDTO;
+import com.infiproton.maps.dto.*;
+import com.infiproton.maps.service.PlaceDetailsService;
 import com.infiproton.maps.service.PlacesNearbyService;
 import com.infiproton.maps.service.PlacesSearchService;
 import lombok.AllArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
@@ -19,6 +14,7 @@ class PlacesController {
 
     private final PlacesNearbyService placesNearbyService;
     private final PlacesSearchService placesSearchService;
+    private final PlaceDetailsService  placeDetailsService;
 
     @PostMapping("/places/nearby")
     public PlacesNearbyResponse getNearbyPlaces(@RequestBody PlacesNearbyRequest request) {
@@ -28,5 +24,10 @@ class PlacesController {
     @PostMapping("/places/search")
     public PlacesSearchResponseDTO searchPlaces(@RequestBody PlacesSearchRequest request) {
         return placesSearchService.search(request);
+    }
+
+    @GetMapping("/places/details")
+    public PlaceDetailsResponseDTO getPlaceDetails(@RequestParam("placeId") String placeId) {
+        return placeDetailsService.getDetails(placeId);
     }
 }
