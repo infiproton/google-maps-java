@@ -18,6 +18,18 @@ class StaticMapController {
 
     private final StaticMapService staticMapService;
 
+    @GetMapping(value = "/drivers")
+    public ResponseEntity<byte[]> getDriversMap() {
+        byte[] img = staticMapService.generateCustomerAndDriversMapImage(MockSpatialData.CUSTOMER,
+                MockSpatialData.DRIVERS, "blue", "red");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_PNG);
+        headers.setContentLength(img.length);
+        return new ResponseEntity<>(img, headers, HttpStatus.OK);
+    }
+
+
     @GetMapping(value = "/customer")
     public ResponseEntity<byte[]> getCustomerMap() {
 
