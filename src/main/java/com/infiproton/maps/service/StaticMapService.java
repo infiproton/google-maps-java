@@ -2,6 +2,7 @@ package com.infiproton.maps.service;
 
 import com.infiproton.maps.model.Driver;
 import com.infiproton.maps.model.GeoPoint;
+import com.infiproton.maps.model.Warehouse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -22,6 +23,38 @@ public class StaticMapService {
 
     private static final String STATIC_BASE = "https://maps.googleapis.com/maps/api/staticmap";
     private static final String DEFAULT_SIZE = "1024x1024";
+
+    public byte[] generateDeliveryRouteMapImage(GeoPoint customer, Warehouse nearestWarehouse,
+                                                String customerColor, String warehouseColor,
+                                                String polyline) {
+        StringBuilder sb = new StringBuilder(STATIC_BASE).append("?");
+        sb.append("size=").append(encode(DEFAULT_SIZE)).append("&");
+        sb.append("markers=color:")
+                .append(encode(customerColor))
+                .append("|")
+                .append(customer.lat())
+                .append(",")
+                .append(customer.lng())
+                .append("&");
+        sb.append("markers=color:")
+                .append(encode(warehouseColor))
+                .append("|").append("label:W|")
+                .append(nearestWarehouse.location().lat())
+                .append(",")
+                .append(nearestWarehouse.location().lng())
+                .append("&");
+
+        sb.append("path=enc:").append(polyline).append("&");
+        sb.append("key=").append(encode(mapsApiKey));
+
+        String url = sb.toString();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(java.util.List.of(MediaType.IMAGE_PNG, MediaType.IMAGE_JPEG));
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<byte[]> resp = restTemplate.exchange(url, HttpMethod.GET, entity, byte[].class);
+        return resp.getBody();
+    }
 
     public byte[] generateCustomerAndDriversMapImage(GeoPoint customer,
                                                      List<Driver> drivers,
